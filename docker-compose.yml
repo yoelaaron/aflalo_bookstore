@@ -1,0 +1,39 @@
+services:
+  app:
+    build: .
+    container_name: bookstore-api
+    restart: unless-stopped
+    ports:
+      - "3008:3008"
+    env_file:
+      - .env
+    depends_on:
+      - postgres
+    # volumes:
+    #   - .:/usr/src/app
+    #   #- /usr/src/app/node_modules
+    networks:
+      - bookstore-network
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: bookstore-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=bookstore_user
+      - POSTGRES_PASSWORD=bookstore_password
+      - POSTGRES_DB=bookstore_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - bookstore-network
+
+volumes:
+  postgres_data:
+
+networks:
+  bookstore-network:
+    driver: bridge
