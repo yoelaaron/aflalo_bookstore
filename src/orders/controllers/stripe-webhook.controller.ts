@@ -1,12 +1,11 @@
 import {
   Controller,
   Post,
-  Body,
   Headers,
   HttpCode,
   HttpStatus,
-  RawBodyRequest,
   Req,
+  BadRequestException,
 } from "@nestjs/common";
 import { Request } from "express";
 import { Public } from "../../auth/decorators/public.decorator";
@@ -24,20 +23,37 @@ export class StripeWebhookController {
   @Post("stripe")
   @HttpCode(HttpStatus.OK)
   async handleStripeWebhook(
-    @Req() req: RawBodyRequest<Request>,
+    @Req() req: Request,
     @Headers("stripe-signature") signature: string
   ): Promise<{ received: boolean }> {
+    if (!signature) {
+      throw new BadRequestException("Missing stripe-signature header");
+    }
+
     try {
+      const rawBody = req.body;
+
+      if (!rawBody) {
+        throw new BadRequestException("Missing request body");
+      }
+
+      console.log("Webhook received, body type:", typeof rawBody);
+      console.log("Signature present:", !!signature);
+
       const event = this.stripeService.constructWebhookEvent(
-        req.body,
+        rawBody,
         signature
       );
+
+      console.log("Webhook event type:", event.type);
+      console.log("Webhook event ID:", event.id);
+
       await this.ordersService.handleStripeWebhook(event);
 
       return { received: true };
     } catch (error) {
       console.error("Webhook error:", error.message);
-      throw error;
+      throw new BadRequestException(`Webhook error: ${error.message}`);
     }
   }
 }

@@ -59,7 +59,7 @@ export class StripeService {
       };
 
       if (amount) {
-        refundData.amount = Math.round(amount * 100); // Convert to cents
+        refundData.amount = Math.round(amount * 100);
       }
 
       if (reason) {
@@ -101,6 +101,25 @@ export class StripeService {
     const endpointSecret = this.configService.get<string>(
       "STRIPE_WEBHOOK_SECRET"
     );
+
+    if (
+      !endpointSecret ||
+      this.configService.get("NODE_ENV") === "development"
+    ) {
+      console.warn(
+        "⚠️ Webhook signature verification skipped (development mode)"
+      );
+
+      if (typeof body === "object" && body.type) {
+        return body as Stripe.Event;
+      }
+
+      try {
+        return JSON.parse(body) as Stripe.Event;
+      } catch (error) {
+        throw new BadRequestException("Invalid webhook payload");
+      }
+    }
 
     try {
       return this.stripe.webhooks.constructEvent(

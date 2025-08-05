@@ -1,29 +1,55 @@
-import { ExecutionContext, Injectable } from "@nestjs/common";
+import { Injectable, ExecutionContext } from "@nestjs/common";
 import { GqlExecutionContext } from "@nestjs/graphql";
-import { ThrottlerGuard } from "@nestjs/throttler";
+import { ThrottlerGuard, ThrottlerException } from "@nestjs/throttler";
 
 @Injectable()
 export class GqlThrottlerGuard extends ThrottlerGuard {
   getRequestResponse(context: ExecutionContext) {
     const gqlCtx = GqlExecutionContext.create(context);
     const ctx = gqlCtx.getContext();
-
-    const req = ctx?.req || {
-      ip: "unknown",
-      headers: {},
-      connection: { remoteAddress: "unknown" },
-      socket: { remoteAddress: "unknown" },
-    };
-
-    const res = ctx?.res || {};
-
-    return { req, res };
+    return { req: ctx.req, res: ctx.res };
   }
 
-  protected async getTracker(req: Record<string, any>): Promise<string> {
-    const userAgent = req?.headers?.["user-agent"] || "unknown";
-    const timestamp = Math.floor(Date.now() / 60000); // Groupe par minute
+  protected async handleRequest(
+    context: ExecutionContext,
+    limit: number,
+    ttl: number,
+    throttler: any
+  ): Promise<boolean> {
+    const { req, res } = this.getRequestResponse(context);
 
-    return `${userAgent}-${timestamp}`;
+    const key = this.generateKey(
+      context,
+      req.ip || req.connection.remoteAddress,
+      throttler.name
+    );
+    const { totalHits, timeToExpire } = await this.storageService.increment(
+      key,
+      ttl
+    );
+
+    if (totalHits > limit) {
+      if (res && typeof res.header === "function") {
+        res.header("X-RateLimit-Limit", limit);
+        res.header("X-RateLimit-Remaining", Math.max(0, limit - totalHits));
+        res.header(
+          "X-RateLimit-Reset",
+          new Date(Date.now() + timeToExpire * 1000)
+        );
+      }
+
+      throw new ThrottlerException();
+    }
+
+    if (res && typeof res.header === "function") {
+      res.header("X-RateLimit-Limit", limit);
+      res.header("X-RateLimit-Remaining", Math.max(0, limit - totalHits));
+      res.header(
+        "X-RateLimit-Reset",
+        new Date(Date.now() + timeToExpire * 1000)
+      );
+    }
+
+    return true;
   }
 }

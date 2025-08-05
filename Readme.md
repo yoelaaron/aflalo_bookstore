@@ -96,20 +96,22 @@ DATABASE_USERNAME=bookstore_user
 DATABASE_PASSWORD=bookstore_password
 DATABASE_NAME=bookstore_db
 
-# JWT Secrets (change in production!)
-JWT_SECRET=your-super-secret-jwt-key
-JWT_REFRESH_SECRET=your-super-secret-refresh-jwt-key
+JWT_SECRET=3b79b5f1cba54992a8351f6a9291f9d3c3e8948a012edcc35f84f94b83db137d
+JWT_REFRESH_SECRET=d9d1a1fc9d54406ba5fc55a39a0bbacdb9f5a7c19df5ef6947d26a0bdfb54678
+JWT_EXPIRES_IN=15m
+JWT_REFRESH_EXPIRES_IN=7d
 
-# Stripe (get from https://dashboard.stripe.com/test/apikeys)
-STRIPE_SECRET_KEY=sk_test_your_stripe_secret_key
-STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret
+STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=
 
-# Email (configure with your SMTP provider)
 MAIL_HOST=smtp.gmail.com
 MAIL_PORT=587
 MAIL_USER=your-email@gmail.com
 MAIL_PASS=your-app-password
 MAIL_FROM=noreply@bookstore.com
+
+NODE_ENV=development
+PORT=3008
 ```
 
 ### 3. Start the Application
@@ -124,9 +126,8 @@ docker-compose up -d
 
 ### 4. Access the API
 
-- **GraphQL Playground**: http://localhost:3000/graphql
-- **Database Admin**: http://localhost:8080
-- **API Endpoint**: http://localhost:3000/graphql
+- **GraphQL Playground**: http://localhost:3008/graphql
+- **API Endpoint**: http://localhost:3008/graphql
 
 ## 📊 Sample Data
 
@@ -138,11 +139,9 @@ The application automatically creates sample data on first run:
 - **Email**: `jane.smith@bookstore.com`
 - **Password**: `Test123!@#`
 
-### Sample Content
+### Postman collection
 
-- 2 bookstores with different themes
-- 5 classic books with realistic data
-- Proper user ownership relationships
+https://aflalo-yoel-5573750.postman.co/workspace/Yoel-Aflalo's-Workspace~be7ce223-8f2c-4335-8ac6-1e9437b6c5f4/collection/688bc90fc868dbe19260eb2f?action=share&creator=47237531
 
 ## 🎯 API Usage
 

@@ -6,15 +6,29 @@ import { TransformInterceptor } from "./common/interceptors/transform.intercepto
 
 async function bootstrap() {
   try {
-    const app = await NestFactory.create(AppModule, {
-      rawBody: true,
-    });
+    const app = await NestFactory.create(AppModule);
 
     const configService = app.get(ConfigService);
 
     app.enableCors({
       origin: true,
       credentials: true,
+    });
+
+    app.use("/api/v1/webhooks/stripe", (req, res, next) => {
+      if (req.get("content-type") === "application/json") {
+        let data = "";
+        req.setEncoding("utf8");
+        req.on("data", (chunk) => {
+          data += chunk;
+        });
+        req.on("end", () => {
+          req.body = data;
+          next();
+        });
+      } else {
+        next();
+      }
     });
 
     app.useGlobalPipes(
@@ -28,15 +42,15 @@ async function bootstrap() {
     app.useGlobalInterceptors(new TransformInterceptor());
 
     app.setGlobalPrefix("api/v1", {
-      exclude: ["/graphql"], // Exclude GraphQL from prefix
+      exclude: ["/graphql"],
     });
 
     const port = configService.get<number>("PORT") || 3000;
     await app.listen(port);
 
-    console.log(`Bookstore API is running!`);
+    console.log(`🚀 Bookstore API is running!`);
   } catch (error) {
-    console.error("Failed to start application:", error);
+    console.error("❌ Failed to start application:", error);
     process.exit(1);
   }
 }
